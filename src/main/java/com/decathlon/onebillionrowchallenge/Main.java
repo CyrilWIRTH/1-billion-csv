@@ -17,7 +17,7 @@ public class Main {
         }
         final String file = args[0];
         final var start = System.currentTimeMillis();
-        System.out.println(Instant.ofEpochMilli(start));
+     //   System.out.println(Instant.ofEpochMilli(start));
     //    final var reader = new UsingScanner(new File(file));
       //   final var reader = new UsingBufferedReader(new File(file));
         final var reader = new UsingFileChannel(new File(file));
@@ -25,7 +25,7 @@ public class Main {
         reader.read();
         reader.print();
         final var end = System.currentTimeMillis();
-        System.out.println(Instant.ofEpochMilli(end));
+    //    System.out.println(Instant.ofEpochMilli(end));
         System.out.println("duration: " + humanReadableFormat(Duration.ofMillis(end - start)));
     }
 
