@@ -5,6 +5,7 @@ import com.decathlon.onebillionrowchallenge.reader.UsingFileChannel;
 import com.decathlon.onebillionrowchallenge.reader.UsingScanner;
 
 import java.io.File;
+import java.time.Duration;
 import java.time.Instant;
 
 public class Main {
@@ -25,6 +26,13 @@ public class Main {
         reader.print();
         final var end = System.currentTimeMillis();
         System.out.println(Instant.ofEpochMilli(end));
-        System.out.println("duration: " + (end - start) + " ms");
+        System.out.println("duration: " + humanReadableFormat(Duration.ofMillis(end - start)));
+    }
+
+    public static String humanReadableFormat(Duration duration) {
+        return duration.toString()
+                .substring(2)
+                .replaceAll("(\\d[HMS])(?!$)", "$1 ")
+                .toLowerCase();
     }
 }

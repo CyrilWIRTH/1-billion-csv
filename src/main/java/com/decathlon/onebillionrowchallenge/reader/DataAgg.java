@@ -32,6 +32,8 @@ public class DataAgg {
         }
     }
 
+
+
     public void print() {
         datas.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(d -> {
             // var average = new BigDecimal(d.getValue().sum.value.get()).divide(new BigDecimal(d.getValue().cpt.intValue()), 2, RoundingMode.CEILING);

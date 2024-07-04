@@ -36,6 +36,7 @@
                             </execution>
                         </executions>
                         <configuration>
+                            <fallback>false</fallback>
                             <buildArgs>
                                 <!-- 3. Quick build mode -->
                                 <buildArg>-Ob</buildArg>

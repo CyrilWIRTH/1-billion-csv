@@ -63,6 +63,8 @@ public class UsingFileChannel extends DataReader {
         List<CounterThread> runnables = new ArrayList<>();
 
         long position = 0;
+
+        List<CounterThread> all = new ArrayList<>();
         for (int i = 0; i < numberOfThreads; i++) {
             if (position > fileChannel.size()) {
                 break;
