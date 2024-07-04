@@ -7,13 +7,13 @@ import java.util.Map;
 
 public class DataAgg {
 
-    public final Map<String, Data> datas = new HashMap<>();
+    public final Map<String, Data> datas = new HashMap<>(500);
 
     public static class Data{
-        public Double min = Double.MAX_VALUE;
-        public Double max = Double.MIN_VALUE;
-        public Integer cpt = 0;
-        public Double sum = 0d ;
+        public double min = Double.MAX_VALUE;
+        public double max = Double.MIN_VALUE;
+        public int cpt = 0;
+        public double sum = 0d ;
     }
 
     public void addData(String key, double value) {
@@ -24,10 +24,10 @@ public class DataAgg {
         final var data = datas.get(key);
         data.sum += value;
         data.cpt++;
-        if (data.min == null || data.min > value) {
+        if (data.min > value) {
             data.min = value;
         }
-        if (data.max == null || data.max < value) {
+        if (data.max < value) {
             data.max = value;
         }
     }

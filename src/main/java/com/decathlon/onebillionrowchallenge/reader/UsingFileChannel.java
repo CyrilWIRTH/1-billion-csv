@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 public class UsingFileChannel extends DataReader {
 
     private FileChannel fileChannel;
-    private Long chunkSize;
+    private long chunkSize;
     private int numberOfThreads;
 
     public UsingFileChannel(File file) throws IOException {
@@ -30,27 +30,19 @@ public class UsingFileChannel extends DataReader {
     private int backUntilEOL(long position) throws IOException {
         long lastPosition = position;
 
-        byte[] data = new byte[1];
-
-        var t = fileChannel.map(FileChannel.MapMode.READ_ONLY, Long.max(lastPosition - 1, 0), 1);
-        t.get(data);
-        if (data[0] == '\n') {
-            return 0;
-        }
-
         int total = 0;
 
         int localChunk = 50;
         while (true) {
             final var buffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, lastPosition - localChunk, localChunk);
             while (buffer.hasRemaining()) {
-                data = new byte[buffer.remaining()];
+                var data = new byte[buffer.remaining()];
                 buffer.get(data);
                 for (int i = data.length - 1; i >= 0; i--) {
-                    total++;
                     if (data[i] == '\n') {
                         return total;
                     }
+                    total++;
                 }
             }
             lastPosition -= localChunk;
@@ -130,7 +122,7 @@ public class UsingFileChannel extends DataReader {
                 int remaining = buffer.remaining();
 
                 if (alreadyRead + remaining > readUntil) {
-                    remaining =  ((Long)(readUntil - alreadyRead)).intValue();
+                    remaining =  ((int)(readUntil - alreadyRead));
                     skip = true;
                 }
 
@@ -140,7 +132,7 @@ public class UsingFileChannel extends DataReader {
                 buffer.get(data);
 
                 //readWithReader(data);
-                //readWithMemory(data);
+             //   readWithMemory(data);
                 readWithMemoryTokenizer(data);
             }
         }
@@ -156,8 +148,8 @@ public class UsingFileChannel extends DataReader {
         private void readWithMemory(byte[] data) {
             final var str = new String(data);
             var lines = str.split("\n");
-            for(var l :lines) {
-                check(l);
+            for(int i = 0; i < lines.length; i++) {
+                check(lines[i]);
             }
         }
 
@@ -193,8 +185,8 @@ public class UsingFileChannel extends DataReader {
 
 
         private String[] split(String line) {
-            final var tokenizer = new StringTokenizer(line);
-            var first = tokenizer.nextToken(SEPARATOR);
+            final var tokenizer = new StringTokenizer(line, SEPARATOR);
+            var first = tokenizer.nextToken();
             return new String[]{first, tokenizer.nextToken()};
         }
 
