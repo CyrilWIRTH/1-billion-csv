@@ -81,9 +81,28 @@ public class UsingFileChannel extends DataReader {
         for (Thread thread : threads) {
             thread.join();
         }
+
+        runnables.forEach(r -> {
+            r.datas.forEach((k, v) -> {
+              final var globalData = UsingFileChannel.this.datas;
+
+              if(!globalData.containsKey(k)) {
+                  globalData.put(k, new Data());
+              }
+              final var d = globalData.get(k);
+
+              d.cpt += v.cpt;
+              d.sum += v.sum;
+              d.min = Math.min(d.min, v.min);
+              d.max = Math.max(d.max, v.max);
+
+            });
+        });
+
     }
 
-    class CounterThread implements Runnable {
+    class CounterThread extends DataAgg
+            implements Runnable {
 
 
         private ByteBuffer buffer;
