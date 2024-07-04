@@ -12,6 +12,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
 public class UsingFileChannel extends DataReader {
@@ -117,23 +118,45 @@ public class UsingFileChannel extends DataReader {
                 byte[] data = new byte[remaining];
                 buffer.get(data);
 
-                final var bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(data), StandardCharsets.UTF_8));
+                //readWithReader(data);
+                //readWithMemory(data);
+                readWithMemoryTokenizer(data);
+            }
+        }
 
-                
-                String line;
-                try {
-                    line = bufferedReader.readLine();
-                    while (true) {
-                        String currentLine = line;
-                        if (!((line = bufferedReader.readLine()) != null)) {
-                            break;
-                        }
-                        check(currentLine);
+        private void readWithMemoryTokenizer(byte[] data) {
+            final var str = new String(data);
+            final var tokenizer = new StringTokenizer(str, "\n");
+            while(tokenizer.hasMoreTokens()) {
+                check(tokenizer.nextToken());
+            }
+        }
+
+        private void readWithMemory(byte[] data) {
+            final var str = new String(data);
+            var lines = str.split("\n");
+            for(var l :lines) {
+                check(l);
+            }
+        }
+
+        private void readWithReader(byte[] data) {
+            final var bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(data), StandardCharsets.UTF_8));
+
+
+            String line;
+            try {
+                line = bufferedReader.readLine();
+                while (true) {
+                    String currentLine = line;
+                    if (!((line = bufferedReader.readLine()) != null)) {
+                        break;
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
+                    check(currentLine);
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }
 
@@ -141,11 +164,20 @@ public class UsingFileChannel extends DataReader {
             if (line.isEmpty()) {
                 return;
             }
-            var d = line.split(SEPARATOR);
+            var d = split(line);
+
             final var currentValue = Double.valueOf(d[1]);
             addData(d[0], currentValue);
         }
+
+        private String[] split(String line) {
+            final var tokenizer = new StringTokenizer(line);
+            var first = tokenizer.nextToken(SEPARATOR);
+            return new String[]{first, tokenizer.nextToken()};
+        }
     }
+
+
 
     static final String SEPARATOR = ";";
 
