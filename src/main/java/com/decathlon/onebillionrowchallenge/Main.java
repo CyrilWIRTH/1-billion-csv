@@ -5,20 +5,26 @@ import com.decathlon.onebillionrowchallenge.reader.UsingFileChannel;
 import com.decathlon.onebillionrowchallenge.reader.UsingScanner;
 
 import java.io.File;
+import java.time.Instant;
 
 public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        final String file = "/Users/CYRIL/Downloads/measurements.txt";
-        // final var reader = new UsingScanner(new File(file));
-        // final var reader = new UsingBufferedReader(new File(file));
-        final var reader = new UsingFileChannel(new File(file));
+        if(args.length != 1) {
+            System.out.println("Usage: java -jar onebillionrowchallenge.jar <file>");
+        }
+        final String file = args[0];
         final var start = System.currentTimeMillis();
-        reader.read();
-        final var end = System.currentTimeMillis();
+        System.out.println(Instant.ofEpochMilli(start));
+    //    final var reader = new UsingScanner(new File(file));
+      //   final var reader = new UsingBufferedReader(new File(file));
+        final var reader = new UsingFileChannel(new File(file));
 
-        System.out.println("min: " + reader.getMin() + " max: " + reader.getMax());
+        reader.read();
+        reader.print();
+        final var end = System.currentTimeMillis();
+        System.out.println(Instant.ofEpochMilli(end));
         System.out.println("duration: " + (end - start) + " ms");
     }
 }

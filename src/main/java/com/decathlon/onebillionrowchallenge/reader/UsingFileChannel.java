@@ -7,15 +7,17 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class UsingFileChannel extends DataReader {
 
     private FileChannel fileChannel;
-    private long chunkSize;
+    private Long chunkSize;
     private int numberOfThreads;
 
     public UsingFileChannel(File file) throws IOException {
@@ -24,7 +26,7 @@ public class UsingFileChannel extends DataReader {
         chunkSize = fileChannel.size() / numberOfThreads;
     }
 
-    private byte[] completeUntilEOL(long position) throws IOException {
+    private int backUntilEOL(long position) throws IOException {
         long lastPosition = position;
 
         byte[] data = new byte[1];
@@ -32,59 +34,45 @@ public class UsingFileChannel extends DataReader {
         var t = fileChannel.map(FileChannel.MapMode.READ_ONLY, Long.max(lastPosition - 1, 0), 1);
         t.get(data);
         if (data[0] == '\n') {
-            return null;
+            return 0;
         }
 
-        List<byte[]> tmp = new ArrayList<>();
+        int total = 0;
+
         int localChunk = 50;
         while (true) {
-            final var buffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, lastPosition, localChunk);
+            final var buffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, lastPosition - localChunk, localChunk);
             while (buffer.hasRemaining()) {
                 data = new byte[buffer.remaining()];
                 buffer.get(data);
-                for (int i = 0; i < data.length; i++) {
+                for (int i = data.length - 1; i >= 0; i--) {
+                    total++;
                     if (data[i] == '\n') {
-                        tmp.add(Arrays.copyOfRange(data, 0, i));
-
-                        byte[] lastOne = new byte[localChunk * (tmp.size() - 1) + tmp.getLast().length];
-
-                        for (int j = 0; j < tmp.size(); j++) {
-                            System.arraycopy(tmp.get(j), 0, lastOne, localChunk * j, tmp.get(j).length);
-                        }
-
-                        return lastOne;
+                        return total;
                     }
-
                 }
-                tmp.add(data);
             }
-            lastPosition += localChunk;
+            lastPosition -= localChunk;
         }
     }
 
     @Override
     public void read() throws IOException, InterruptedException {
-
-
         List<Thread> threads = new ArrayList<>();
         List<CounterThread> runnables = new ArrayList<>();
 
         long position = 0;
         for (int i = 0; i < numberOfThreads; i++) {
-            if(position > fileChannel.size()) {
+            if (position > fileChannel.size()) {
                 break;
             }
 
-            if(position+ chunkSize > fileChannel.size()) {
-                chunkSize = fileChannel.size() - position;
-            }
-
             var buffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, position, chunkSize);
-            final var plus = completeUntilEOL(position + chunkSize);
+            final var backUntilEOL = backUntilEOL(position + chunkSize);
 
-            position += (chunkSize + (plus == null ? 0 : plus.length));
-            System.out.println(position);
-            var runnable = new CounterThread(buffer, plus);
+            position += (chunkSize - backUntilEOL);
+
+            var runnable = new CounterThread(buffer, backUntilEOL);
             runnables.add(runnable);
             Thread counterThread = Thread.startVirtualThread(runnable);
             threads.add(counterThread);
@@ -92,46 +80,52 @@ public class UsingFileChannel extends DataReader {
         for (Thread thread : threads) {
             thread.join();
         }
-        for (CounterThread runnable : runnables) {
-            replaceMaxIfNeeded(runnable.getMax());
-            replaceMinIfNeeded(runnable.getMin());
-        }
     }
 
-    class CounterThread extends Thread {
-        private Double localMin = Double.MAX_VALUE;
-        private Double localMax = Double.MIN_VALUE;
+    class CounterThread implements Runnable {
 
 
         private ByteBuffer buffer;
-        private final byte[] plus;
+        private final int minusUntilLastEOL;
 
 
-        public CounterThread(ByteBuffer buffer, byte[] plus) {
+        public CounterThread(ByteBuffer buffer, int minusUntilLastEOL) {
             this.buffer = buffer;
-            this.plus = plus;
+            this.minusUntilLastEOL = minusUntilLastEOL;
         }
 
         @Override
         public void run() {
-            String lastLine = null;
+
+            final var readUntil = chunkSize - minusUntilLastEOL;
+
+            boolean skip = false;
+            int alreadyRead = 0;
             while (buffer.hasRemaining()) {
-                byte[] data = new byte[buffer.remaining()];
+                if(skip) {
+                    break;
+                }
+                int remaining = buffer.remaining();
+
+                if (alreadyRead + remaining > readUntil) {
+                    remaining =  ((Long)(readUntil - alreadyRead)).intValue();
+                    skip = true;
+                }
+
+                alreadyRead += remaining;
+
+                byte[] data = new byte[remaining];
                 buffer.get(data);
 
-                final var bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(data)));
+                final var bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(data), StandardCharsets.UTF_8));
 
+                
                 String line;
-
                 try {
                     line = bufferedReader.readLine();
-
                     while (true) {
                         String currentLine = line;
                         if (!((line = bufferedReader.readLine()) != null)) {
-                            if (plus != null) {
-                                check(currentLine + new String(plus));
-                            }
                             break;
                         }
                         check(currentLine);
@@ -144,33 +138,15 @@ public class UsingFileChannel extends DataReader {
         }
 
         private void check(String line) {
-            if(line.isEmpty()) {
+            if (line.isEmpty()) {
                 return;
             }
-            final var currentValue = Double.valueOf(line.split(";")[1]);
-            replaceMinIfNeeded(currentValue);
-            replaceMaxIfNeeded(currentValue);
+            var d = line.split(SEPARATOR);
+            final var currentValue = Double.valueOf(d[1]);
+            addData(d[0], currentValue);
         }
-
-        public Double getMin() {
-            return localMin;
-        }
-
-        public Double getMax() {
-            return localMax;
-        }
-
-        protected void replaceMinIfNeeded(Double value) {
-            if (value < localMin) {
-                this.localMin = value;
-            }
-        }
-
-        protected void replaceMaxIfNeeded(Double value) {
-            if (value > localMax) {
-                this.localMax = value;
-            }
-        }
-
     }
+
+    static final String SEPARATOR = ";";
+
 }

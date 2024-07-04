@@ -18,9 +18,9 @@ public class UsingBufferedReader extends DataReader {
     public void read() throws IOException {
         String line;
         while ((line = bufferedReader.readLine()) != null) {
-            final var currentValue = Double.valueOf(line.split(",")[1]);
-            replaceMinIfNeeded(currentValue);
-            replaceMaxIfNeeded(currentValue);
+            var d = line.split(";");
+            final var currentValue = Double.valueOf(d[1]);
+            addData(d[0], currentValue);
         }
     }
 }
