@@ -166,18 +166,39 @@ public class UsingFileChannel extends DataReader {
             }
             var d = split(line);
 
-            final var currentValue = Double.valueOf(d[1]);
+            final var currentValue = Double.parseDouble(d[1]);
             addData(d[0], currentValue);
         }
+
 
         private String[] split(String line) {
             final var tokenizer = new StringTokenizer(line);
             var first = tokenizer.nextToken(SEPARATOR);
             return new String[]{first, tokenizer.nextToken()};
         }
+
+        /*
+        private String[] split(String line) {
+            var tab = line.toCharArray();
+            int index = 0;
+            for(int i = tab.length - 1; i >= 0; i--) {
+                if(tab[i] == ';') {
+                    index = i;
+                    break;
+                }
+            }
+
+            var a = new char[index];
+            var b = new char[tab.length - index - 1];
+
+            System.arraycopy(tab, 0, a, 0, index);
+            System.arraycopy(tab, index + 1, b, 0, tab.length - index - 1);
+
+            return new String[]{new String(a), new String(b)};
+        }
+
+         */
     }
-
-
 
     static final String SEPARATOR = ";";
 
